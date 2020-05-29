@@ -2,12 +2,12 @@
 
 Welcome to the v2.0.0 release of the _Anvil!_ m2 [Intelligent Availability](https://www.alteeve.com/w/Intelligent_Availability)™ platform!
 
-What is an _Anvil!_ Platform?
+What is an _Anvil!_ platform?
 
 - It is the first server platform designed with the singular focus of protecting your servers and keeping them running under even extreme fault conditions.
 - It is fully self-contained, making it ideal for totally offline operation.
 - It is a "self driving" server availability platform that can continuously monitors internal and external data sources, compiling, analyzing and autonomously deciding when and what action to take to protect your servers. It is ideally suited for extended remote deployments and "hands off" operation.
-- It is based on an extensively field tested, open architecture with full data, mechanical and electrical redundancy allowing any component to be failed, removed and replaced without the need for a maintenance window. The _ANvil!_ platform has over five years of real-world deployment over dozens of sites and an historic uptime of over 99.9999%.
+- It is based on an extensively field tested, open architecture with full data, mechanical and electrical redundancy allowing any component to be failed, removed and replaced without the need for a maintenance window. The _Anvil!_ platform has over five years of real-world deployment over dozens of sites and an historic uptime of over 99.9999%.
 - It is extremely easy to use, minimizing the opportunity for human error and making it as simple as possible for "remote hands" to affect repairs and replacements without any prior availability experience and minimal technical knowledge.
 
 In short, it is a server platform that just won't die.
@@ -16,9 +16,9 @@ In short, it is a server platform that just won't die.
 
 It's quite easy, but it does require a little more space than a README allows for.
 
-- [How to Build an m2 Anvil!](https://www.alteeve.com/w/Build_an_m2_Anvil!)
+- [How to Build an m2 _Anvil!_](https://www.alteeve.com/w/Build_an_m2_Anvil!)
 
-The _Anvil!_ was designed and extensively tested on [Primergy](http://www.fujitsu.com/global/products/computing/servers/primergy/) servers, Brocade [ICX](http://www.brocade.com/en/products-services/switches/campus-network-switches.html) switches and APC [SmartUPS](http://www.apc.com/smartups/index.cfm?ISOCountryCode=ca) UPSes and [Switched PDU](http://www.apc.com/shop/ca/en/categories/power-distribution/rack-power-distribution/switched-rack-pdu/_/N-17k76am)s. That said, the _Anvil!_ platform is designed to be hardware agnostic and should work just fine on Dell, Cisco USC, NEC, Lenovo x-series, and other tier-1 server vendors.
+The _Anvil!_ platform was designed and extensively tested on [Primergy](http://www.fujitsu.com/global/products/computing/servers/primergy/) servers, Brocade [ICX](http://www.brocade.com/en/products-services/switches/campus-network-switches.html) switches and APC [SmartUPS](http://www.apc.com/smartups/index.cfm?ISOCountryCode=ca) UPSes and [Switched PDU](http://www.apc.com/shop/ca/en/categories/power-distribution/rack-power-distribution/switched-rack-pdu/_/N-17k76am)s. That said, the _Anvil!_ platform is designed to be hardware agnostic and should work just fine on Dell, Cisco USC, NEC, Lenovo x-series, and other tier-1 server vendors.
 
 [Alteeve](https://www.alteeve.com/), the company behind the _Anvil!_ project, actively supports the [open source](https://www.alteeve.com/w/Support) community. We also offer commercial support contracts to assist with any stage of deployment, operation and custom development.
 
@@ -76,8 +76,8 @@ These decisions are only made by **nodes**.
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1      | Enter (or reenter) stable **power** state and clear power Warnings.                                                                                       |
 | 2      | Enter (or reenter) stable **temperature** state and clear temperature Warnings.                                                                           |
-| 3      | Enter **power** Warning state and send notifications stating that power abnormalities were detected.                                                      |
-| 4      | Enter **temperature** Warning state and send notifications stating that temperature abnormalities were detected.                                          |
+| 3      | Enter **power** warning state and send notifications stating that power abnormalities were detected.                                                      |
+| 4      | Enter **temperature** warning state and send notifications stating that temperature abnormalities were detected.                                          |
 | 5      | The node that made this decision will shutdown with **power** as reason.                                                                                  |
 | 6      | The node that made this decision will shutdown with **temperature** as reason.                                                                            |
 | 7      | Due to abnormalities in **power**, ScanCore will 1) determine whether servers need to be migrated, and 2) select one node to shutdown to shed load.       |
