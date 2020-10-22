@@ -1,0 +1,232 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use AN::Tools;
+no warnings 'recursion';
+
+# Disable buffering.
+$| = 1;
+
+my $THIS_FILE = ($0 =~ /^.*\/(.*)$/)[0];
+
+my $an = AN::Tools->new({
+	data => {
+		path => {
+			striker_config => "/etc/striker/striker.conf",
+		},
+	}
+});
+
+# Read the config file
+$an->Storage->read_conf({file => $an->data->{path}{striker_config}});
+
+$an->Get->switches();
+
+if (not $an->data->{switches}{action})
+{
+	print "Missing or invalid action; it must be a positive integer."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
+
+# Flag node-uuid is not required
+if (($an->data->{switches}{'node-uuid'}) && (not $an->data->{switches}{'node-uuid'} =~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/))
+{
+	print "Unrecognizable node UUID."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
+
+sub print_hash
+{
+	my $parameter = shift;
+
+	if ($parameter->{print_hash_message_prefix})
+	{
+		print $parameter->{print_hash_message_prefix}."\n";
+
+		delete $parameter->{print_hash_message_prefix};
+	}
+
+	foreach my $key (keys %{$parameter})
+	{
+		my $value = $parameter->{$key} ? $parameter->{$key} : "";
+
+		print "$key: [$value]"."\n";
+	}
+}
+
+print_hash({
+	action		=>	$an->data->{switches}{action},
+	'node-uuid'	=>	$an->data->{switches}{'node-uuid'},
+});
+
+# Only executed when host is a Node.
+#
+# Migrate all servers to this Node.
+if ($an->data->{switches}{action} == 2)
+{
+	my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
+
+	$an->Striker->load_anvil({anvil_uuid => $an->data->{sys}{anvil_uuid}});
+
+	my $node_name = $an->hostname;
+	my $peer_key  = $an->data->{sys}{node_name}{$node_name}{peer_node_key};
+	my $peer_name = $an->data->{sys}{anvil}{$peer_key}{name};
+
+	print_hash({
+		node_name	=>	$node_name,
+		peer_key	=>	$peer_key,
+		peer_name	=>	$peer_name,
+	});
+
+	my $shell_call = $an->data->{path}{clustat};
+
+	print_hash({
+		shell_call	=>	$shell_call,
+	});
+
+	if (open (my $clustat_out_file_handle, $shell_call." 2>&1 |"))
+	{
+		while(<$clustat_out_file_handle>)
+		{
+			chomp;
+
+			my $line =  $_;
+
+			$line =~ s/\s+/ /g;
+			$line =~ s/^\s+//;
+			$line =~ s/\s+$//;
+
+			print_hash({
+				line	=>	$line,
+			});
+
+			if ($line =~ /^vm:(.*?) (.*?) (.*)/)
+			{
+				my $server = $1;
+				my $host   = $2;
+				my $state  = $3;
+
+				print_hash({
+					server	=>	$server,
+					host	=>	$host,
+					state	=>	$state,
+				});
+
+				if (($host eq $peer_name) && ($state eq "started"))
+				{
+					my $shell_call = $an->data->{path}{'anvil-migrate-server'}." --server $server; ".$an->data->{path}{'echo'}." return_code:\$?";
+
+					print_hash({
+						shell_call	=>	$shell_call,
+					});
+
+					if (open (my $anvil_migrate_server_out_file_handle, $shell_call." 2>&1 |"))
+					{
+						while(<$anvil_migrate_server_out_file_handle>)
+						{
+							chomp;
+
+							my $line = $_;
+
+							print_hash({
+								line	=>	$line,
+							});
+
+							if ($line =~ /return_code:(\d+)$/)
+							{
+								my $return = $1;
+
+								print_hash({
+									return	=>	$return,
+								});
+							}
+						}
+
+						close $anvil_migrate_server_out_file_handle;
+					}
+					else
+					{
+						print_hash({
+							print_hash_message_prefix		=>	"Failed to call:",
+							shell_call	=>	$shell_call,
+							error		=>	$!,
+						});
+
+						$an->nice_exit({exit_code => 2});
+					}
+				}
+			}
+		}
+
+		close $clustat_out_file_handle;
+	}
+	else
+	{
+		print_hash({
+			print_hash_message_prefix		=>	"Failed to call:",
+			shell_call	=>	$shell_call,
+			error		=>	$!,
+		});
+
+		$an->nice_exit({exit_code => 2});
+	}
+}
+# Only executed when host is a Node.
+#
+# Shut down this Node.
+elsif ($an->data->{switches}{action} == 3)
+{
+	my $shell_call = $an->data->{path}{'anvil-safe-stop'}." --local --suicide";
+
+	print_hash({
+		shell_call	=>	$shell_call,
+	});
+
+	if (open(my $anvil_safe_stop_out_file_handle, "$shell_call 2>&1 |"))
+	{
+		while (<$anvil_safe_stop_out_file_handle>)
+		{
+			chomp;
+
+			my $line = $_;
+
+			$line =~ s/\n//g;
+			$line =~ s/\r//g;
+
+			print_hash({
+				line	=>	$line,
+			});
+		}
+
+		close $anvil_safe_stop_out_file_handle;
+	}
+	else
+	{
+		print_hash({
+			print_hash_message_prefix		=>	"Failed to call:",
+			shell_call	=>	$shell_call,
+			error		=>	$!,
+		});
+
+		$an->nice_exit({exit_code => 2});
+	}
+}
+# Only executed when host is a Striker.
+#
+# Boot the Node specified by the node-uuid flag.
+elsif ($an->data->{switches}{action} == 4)
+{
+	my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
+
+	my $state = $an->ScanCore->target_power({
+		target	=> $an->data->{switches}{'node-uuid'},
+		task	=> "on",
+	});
+
+	print_hash({
+		state	=>	$state,
+	});
+}
