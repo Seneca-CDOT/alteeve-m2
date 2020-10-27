@@ -22,75 +22,54 @@ The _Anvil!_ platform was designed and extensively tested on [Primergy](http://w
 
 [Alteeve](https://www.alteeve.com/), the company behind the _Anvil!_ project, actively supports the [open source](https://www.alteeve.com/w/Support) community. We also offer commercial support contracts to assist with any stage of deployment, operation and custom development.
 
-# Action Module
+# Actions for the AI
 
-The purpose of the Action module is to isolate the ScanCore decision logic.
+This section provides an overview of the components involved in supporting the "ScanCore AI".
 
 ## Overview
 
-![Overview of the Action module](./assets/scancore-decision-making.png)
+![Overview of the Action module working with the AI](./assets/scancore-ai-taking-action.png)
 
-With the Action module, ScanCore's decision making process has been modified to:
+Two pieces have been added in order for the AI to dispatch actions and prevent interference when the dispatched actions are executed:
 
-1. ScanCore makes a decision through `decide()` in the Action module
-2. `decide()` puts the decision into `public.decisions` inside ScanCore's database; the decisions table is essentially a queue
-3. The inserted decision gets replicated to `history.decisions`
-4. When ScanCore reaches the end of a scan, it executes all decisions in `public.decisions`
-5. Executed decisions are removed from `public.decisions`
+### 1. `execute-action` CLI tool
 
-## Allowing External Decisions
+`execute-action` accepts an action number and executes the corresponding action. It takes 2 arguments in the form of switches:
 
-![Overview of the Action module working with the AI](./assets/scancore-ai-decision-making.png)
-
-Two additional pieces have been added along with the Action module to allow the AI to make decisions:
-
-### 1. `call_action-decide` CLI tool
-
-`call_action-decide` calls `decide()` in the Action module to insert external decisions. It takes 2 arguments in the form of switches:
-
-1. (required) `--decision`, and
+1. (required) `--action`, and
 2. (optional) `--node-uuid`
 
-Since this tool exists on all nodes and strikers, it is unnecessary to add additional arguments, i.e., host UUID, to determine the script's environment. Only decisions 10 and 11 (refer to the [striker decisions table](#striker-decisions)) require `--node-uuid` because it specifies which node to boot/reboot.
+Since this tool exists on all Nodes and Strikers, it is unnecessary to add additional arguments, i.e., host UUID, to determine the script's environment. Only decision 4 (refer to the [Striker decisions table](#striker-actions)) require `--node-uuid` because it specifies which node to boot.
 
 Example usage:
 
 ```
-call_action-decide --decision "10" --node-uuid "f5ac6b0b-9ef2-4b52-abcb-8fd46135a65c"
+execute-action --action "4" --node-uuid "f5ac6b0b-9ef2-4b52-abcb-8fd46135a65c"
 ```
 
-### 2. `scancore::prevent_decision_making` flag in `/etc/striker/striker.conf`
+### 2. `scancore::post_scan_checks::enabled` flag in `/etc/striker/striker.conf`
 
-The `prevent_decision_making` flag prevents ScanCore from queuing decisions. It can be set to:
+The `scancore::post_scan_checks::enabled` flag controls whether ScanCore should be analyzing the data collected by the scan agents and taking action based on the analysis. It can be set to:
 
-- `0`: allow ScanCore to queue decisions, or
-- `1`: prevent ScanCore from queuing decisions
+- `0`: ignore post scan checks, or
+- `1`: perform post scan checks
 
-## Decisions Definition
+## Actions Definition
 
-### Node Decisions
+### Node Actions
 
-These decisions are only made by **nodes**.
+These actions are only executed by **Nodes**.
 
-| Number | Definition                                                                                                                                                |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1      | Enter (or reenter) stable **power** state and clear power Warnings.                                                                                       |
-| 2      | Enter (or reenter) stable **temperature** state and clear temperature Warnings.                                                                           |
-| 3      | Enter **power** warning state and send notifications stating that power abnormalities were detected.                                                      |
-| 4      | Enter **temperature** warning state and send notifications stating that temperature abnormalities were detected.                                          |
-| 5      | The node that made this decision will shutdown with **power** as reason.                                                                                  |
-| 6      | The node that made this decision will shutdown with **temperature** as reason.                                                                            |
-| 7      | Due to abnormalities in **power**, ScanCore will 1) determine whether servers need to be migrated, and 2) select one node to shutdown to shed load.       |
-| 8      | Due to abnormalities in **temperature**, ScanCore will 1) determine whether servers need to be migrated, and 2) select one node to shutdown to shed load. |
-| 9      | Migrate servers                                                                                                                                           |
+| Number | Definition                                                                             |
+| ------ | -------------------------------------------------------------------------------------- |
+| 1      | Do nothing.                                                                            |
+| 2      | Migrate Anvil servers to the Node on which the action was executed.                    |
+| 3      | Shutdown a Node; it will be auto-removed from the cluster during the shutdown process. |
 
-### Striker Decisions
+### Striker Actions
 
-These decisions are only made by **strikers**.
+These actions are only executed by **Strikers**.
 
-| Number | Definition  |
-| ------ | ----------- |
-| 10     | Boot node   |
-| 11     | Reboot node |
-
-Note: these decisions were extracted and numbered regardless of whether they are actually used.
+| Number | Definition                                                                        |
+| ------ | --------------------------------------------------------------------------------- |
+| 4      | Boot a Node; it will be auto-added to the cluster during the Node's boot process. |

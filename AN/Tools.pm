@@ -26,7 +26,6 @@ $ENV{'PERL_UNICODE'} = 1;
 # I intentionally don't use EXPORT, @ISA and the like because I want my "subclass"es to be accessed in a
 # somewhat more OO style. I know some may wish to strike me down for this, but I like the idea of accessing
 # methods via their containing module's name. (A La: $an->Module->method rather than $an->method).
-use AN::Tools::Action;
 use AN::Tools::Alert;
 use AN::Tools::Check;
 use AN::Tools::Cman;
@@ -55,7 +54,6 @@ sub new
 	my $parameter = shift;
 	my $self      = {
 		HANDLE				=>	{
-			ACTION				=>	AN::Tools::Action->new(),
 			ALERT				=>	AN::Tools::Alert->new(),
 			CHECK				=>	AN::Tools::Check->new(),
 			CMAN				=>	AN::Tools::Cman->new(),
@@ -109,7 +107,6 @@ sub new
 
 	# This gets handles to my other modules that the child modules will use to talk to other sibling 
 	# modules.
-	$an->Action->parent($an);
 	$an->Alert->parent($an);
 	$an->Check->parent($an);
 	$an->Cman->parent($an);
@@ -341,13 +338,6 @@ sub short_hostname
 	   $short_host_name =~ s/\..*$//;
 	
 	return($short_host_name);
-}
-
-sub Action
-{
-	my $self = shift;
-
-	return ($self->{HANDLE}{ACTION});
 }
 
 # Makes my handle to AN::Tools::Alert clearer when using this module to access its methods.
