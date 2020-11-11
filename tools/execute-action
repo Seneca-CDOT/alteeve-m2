@@ -9,6 +9,7 @@ no warnings 'recursion';
 $| = 1;
 
 my $THIS_FILE = ($0 =~ /^.*\/(.*)$/)[0];
+my $ACTION_LIST_LENGTH = 4;
 
 my $an = AN::Tools->new({
 	data => {
@@ -63,6 +64,41 @@ print_hash({
 });
 
 my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
+
+# Each element should only contain 0 or 1 representing whether the index+1 action was read.
+my @action_list = ($an->data->{sys}{use_db_fh}->quote(0)) x $ACTION_LIST_LENGTH;
+my $action_list_index = $an->data->{switches}{action} - 1;
+
+$action_list[$action_list_index] = $an->data->{sys}{use_db_fh}->quote(1);
+
+# Prevent unrecognized action numbers (out-of-bounds) by trimming the list.
+@action_list = @action_list[0..($ACTION_LIST_LENGTH - 1)];
+
+my $record_action_query = "
+INSERT INTO
+	history.actions
+(
+	action_uuid,
+	action_host_uuid,
+	".join(",", map { "action_".$_ } 1..$ACTION_LIST_LENGTH ).",
+	modified_date
+) VALUES (
+	".$an->data->{sys}{use_db_fh}->quote($an->Get->uuid()).",
+	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{host_uuid}).",
+	".join(",", @action_list).",
+	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{db_timestamp})."
+);
+";
+
+print_hash({
+	record_action_query	=>	$record_action_query,
+});
+
+$an->DB->do_db_write({
+	query	=>	$record_action_query,
+	source	=>	$THIS_FILE,
+	line	=>	__LINE__
+});
 
 # Only executed when host is a Node.
 #
@@ -150,9 +186,9 @@ if ($an->data->{switches}{action} == 2)
 					else
 					{
 						print_hash({
-							print_hash_message_prefix		=>	"Failed to call:",
-							shell_call	=>	$shell_call,
-							error		=>	$!,
+							print_hash_message_prefix	=>	"Failed to call:",
+							shell_call					=>	$shell_call,
+							error						=>	$!,
 						});
 
 						$an->nice_exit({exit_code => 2});
@@ -166,9 +202,9 @@ if ($an->data->{switches}{action} == 2)
 	else
 	{
 		print_hash({
-			print_hash_message_prefix		=>	"Failed to call:",
-			shell_call	=>	$shell_call,
-			error		=>	$!,
+			print_hash_message_prefix	=>	"Failed to call:",
+			shell_call					=>	$shell_call,
+			error						=>	$!,
 		});
 
 		$an->nice_exit({exit_code => 2});
@@ -206,9 +242,9 @@ elsif ($an->data->{switches}{action} == 3)
 	else
 	{
 		print_hash({
-			print_hash_message_prefix		=>	"Failed to call:",
-			shell_call	=>	$shell_call,
-			error		=>	$!,
+			print_hash_message_prefix	=>	"Failed to call:",
+			shell_call					=>	$shell_call,
+			error						=>	$!,
 		});
 
 		$an->nice_exit({exit_code => 2});
@@ -228,25 +264,3 @@ elsif ($an->data->{switches}{action} == 4)
 		state	=>	$state,
 	});
 }
-
-my record_action_query = "
-INSERT INTO
-	actions
-(
-	action_uuid,
-	action_host_uuid,
-	action_number,
-	modified_date
-) VALUES (
-	".$an->data->{sys}{use_db_fh}->quote($an->Get->uuid()).",
-	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{host_uuid}).",
-	".$an->data->{sys}{use_db_fh}->quote($an->data->{switches}{action}).",
-	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{db_timestamp})."
-);
-";
-
-$an->DB->do_db_write({
-	query	=>	$record_action_query,
-	source	=>	$THIS_FILE,
-	line	=>	__LINE__
-});
