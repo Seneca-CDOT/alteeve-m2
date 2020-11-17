@@ -1390,3 +1390,15 @@ CREATE TABLE states (
 	FOREIGN KEY(state_host_uuid) REFERENCES hosts(host_uuid)
 );
 ALTER TABLE states OWNER TO #!variable!user!#;
+
+CREATE TABLE history.actions (
+	history_id							bigserial,
+	action_uuid							uuid,
+	action_host_uuid					uuid,						-- UUID of the machine that executed the action
+	action_1							numeric,					-- 0 or 1 specifying whether this action was executed
+	action_2							numeric,
+	action_3							numeric,
+	action_4							numeric,
+	modified_date						timestamp with time zone
+);
+ALTER TABLE history.actions OWNER TO #!variable!user!#;
