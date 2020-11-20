@@ -1391,14 +1391,20 @@ CREATE TABLE states (
 );
 ALTER TABLE states OWNER TO #!variable!user!#;
 
+
+-- Table for storing actions dispatched from ScanCore AI.
 CREATE TABLE history.actions (
 	history_id							bigserial,
-	action_uuid							uuid,
-	action_host_uuid					uuid,						-- UUID of the machine that executed the action
-	action_1							numeric,					-- 0 or 1 specifying whether this action was executed
-	action_2							numeric,
-	action_3							numeric,
-	action_4							numeric,
+	uuid								uuid,
+	host_uuid							uuid,						-- UUID of the machine that executed the action
+	node_1_action_1						numeric,					-- 0 or 1 specifying whether this action was executed
+	node_1_action_2						numeric,
+	node_1_action_3						numeric,
+	node_1_action_4						numeric,
+	node_2_action_1						numeric,
+	node_2_action_2						numeric,
+	node_2_action_3						numeric,
+	node_2_action_4						numeric,
 	modified_date						timestamp with time zone
 );
 ALTER TABLE history.actions OWNER TO #!variable!user!#;
