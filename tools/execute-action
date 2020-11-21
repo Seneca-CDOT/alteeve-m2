@@ -11,6 +11,7 @@ $| = 1;
 my $THIS_FILE = ($0 =~ /^.*\/(.*)$/)[0];
 my $N_HOSTS = 2;
 my $N_ACTIONS = 4;
+my $ACTION_ARRAY_LENGTH = $N_HOSTS * $N_ACTIONS;
 
 my $an = AN::Tools->new({
 	data => {
@@ -112,6 +113,13 @@ print_hash({
 });
 
 my @action_array = split(",", $an->data->{switches}{csv});
+
+if (scalar @action_array != $ACTION_ARRAY_LENGTH)
+{
+	print "CSV length does not match the expected length of ".$ACTION_ARRAY_LENGTH."."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
 
 my $record_action_query = "
 INSERT INTO
