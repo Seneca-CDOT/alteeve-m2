@@ -9,7 +9,8 @@ no warnings 'recursion';
 $| = 1;
 
 my $THIS_FILE = ($0 =~ /^.*\/(.*)$/)[0];
-my $ACTION_LIST_LENGTH = 4;
+my $N_HOSTS = 2;
+my $N_ACTIONS = 4;
 
 my $an = AN::Tools->new({
 	data => {
@@ -26,15 +27,21 @@ $an->Get->switches();
 
 if (not $an->data->{switches}{action})
 {
-	print "Missing or invalid action; it must be a positive integer."."\n";
+	print "Missing action number."."\n";
 
 	$an->nice_exit({exit_code => 1});
 }
 
-# Flag node-uuid is not required
-if (($an->data->{switches}{'node-uuid'}) && (not $an->data->{switches}{'node-uuid'} =~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/))
+if (not $an->data->{switches}{node})
 {
-	print "Unrecognizable node UUID."."\n";
+	print "Missing node number."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
+
+if (not $an->data->{switches}{csv})
+{
+	print "Missing action CSV."."\n";
 
 	$an->nice_exit({exit_code => 1});
 }
@@ -58,34 +65,73 @@ sub print_hash
 	}
 }
 
-print_hash({
-	action		=>	$an->data->{switches}{action},
-	'node-uuid'	=>	$an->data->{switches}{'node-uuid'},
-});
+sub get_node_uuid
+{
+	my $parameter = shift;
+
+	if (not $parameter->{node_number})
+	{
+		return;
+	}
+
+	my $get_node_uuid_query = '
+SELECT nodes.node_uuid
+FROM public.hosts hosts
+INNER JOIN public.nodes nodes
+	ON hosts.host_uuid = nodes.node_host_uuid
+WHERE hosts.host_name LIKE \'an-a%n%'.$parameter->{node_number}.'%\';
+	';
+
+	print_hash({
+		get_node_uuid_query	=>	$get_node_uuid_query,
+	});
+
+	my $node_uuid = $an->DB->do_db_query({
+		query	=>	$get_node_uuid_query,
+		source	=>	$THIS_FILE,
+		line	=>	__LINE__
+	})->[0]->[0];
+
+	print_hash({
+		node_uuid	=>	$node_uuid,
+	});
+
+	return $node_uuid;
+}
 
 my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
 
-# Each element should only contain 0 or 1 representing whether the index+1 action was read.
-my @action_list = ($an->data->{sys}{use_db_fh}->quote(0)) x $ACTION_LIST_LENGTH;
-my $action_list_index = $an->data->{switches}{action} - 1;
+my $node_uuid = get_node_uuid({
+	node_number	=>	$an->data->{switches}{node},
+});
 
-$action_list[$action_list_index] = $an->data->{sys}{use_db_fh}->quote(1);
+print_hash({
+	action		=>	$an->data->{switches}{action},
+	node_uuid	=>	$node_uuid,
+	csv 		=>	$an->data->{switches}{csv},
+});
 
-# Prevent unrecognized action numbers (out-of-bounds) by trimming the list.
-@action_list = @action_list[0..($ACTION_LIST_LENGTH - 1)];
+my @action_array = split(",", $an->data->{switches}{csv});
 
 my $record_action_query = "
 INSERT INTO
 	history.actions
 (
-	action_uuid,
-	action_host_uuid,
-	".join(",", map { "action_".$_ } 1..$ACTION_LIST_LENGTH ).",
+	uuid,
+	host_uuid,
+	".join(",",
+		map {
+			my $node_prefix = "node_".$_."_";
+			map { $node_prefix."action_".$_ } 1..$N_ACTIONS
+		} 1..$N_HOSTS
+	).",
 	modified_date
 ) VALUES (
 	".$an->data->{sys}{use_db_fh}->quote($an->Get->uuid()).",
 	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{host_uuid}).",
-	".join(",", @action_list).",
+	".join(",",
+		map { $an->data->{sys}{use_db_fh}->quote($_) } @action_array
+	).",
 	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{db_timestamp})."
 );
 ";
@@ -252,11 +298,11 @@ elsif ($an->data->{switches}{action} == 3)
 }
 # Only executed when host is a Striker.
 #
-# Boot the Node specified by the node-uuid flag.
+# Boot the Node specified by the node flag.
 elsif ($an->data->{switches}{action} == 4)
 {
 	my $state = $an->ScanCore->target_power({
-		target	=> $an->data->{switches}{'node-uuid'},
+		target	=> $node_uuid,
 		task	=> "on",
 	});
 
