@@ -40,12 +40,7 @@ if (not $an->data->{switches}{node})
 	$an->nice_exit({exit_code => 1});
 }
 
-if (not $an->data->{switches}{csv})
-{
-	print "Missing action CSV."."\n";
-
-	$an->nice_exit({exit_code => 1});
-}
+# ----- Begin function section
 
 sub print_hash
 {
@@ -70,18 +65,17 @@ sub get_node_uuid
 {
 	my $parameter = shift;
 
-	if (not $parameter->{node_number})
+	if (not $parameter->{node})
 	{
 		return;
 	}
 
-	my $get_node_uuid_query = '
+	my $get_node_uuid_query = "
 SELECT nodes.node_uuid
 FROM public.hosts hosts
 INNER JOIN public.nodes nodes
 	ON hosts.host_uuid = nodes.node_host_uuid
-WHERE hosts.host_name LIKE \'an-a%n%'.$parameter->{node_number}.'%\';
-	';
+WHERE hosts.host_name LIKE 'an-a%n%".$parameter->{node}."%';";
 
 	print_hash({
 		get_node_uuid_query	=>	$get_node_uuid_query,
@@ -100,28 +94,68 @@ WHERE hosts.host_name LIKE \'an-a%n%'.$parameter->{node_number}.'%\';
 	return $node_uuid;
 }
 
-my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
-
-my $node_uuid = get_node_uuid({
-	node_number	=>	$an->data->{switches}{node},
-});
-
-print_hash({
-	action		=>	$an->data->{switches}{action},
-	node_uuid	=>	$node_uuid,
-	csv 		=>	$an->data->{switches}{csv},
-});
-
-my @action_array = split(",", $an->data->{switches}{csv});
-
-if (scalar @action_array != $ACTION_ARRAY_LENGTH)
+sub convert_to_action_array
 {
-	print "CSV length does not match the expected length of ".$ACTION_ARRAY_LENGTH."."."\n";
+	my $parameter = shift;
 
-	$an->nice_exit({exit_code => 1});
+	if (not $parameter->{action})
+	{
+		return;
+	}
+
+	if (not $parameter->{node})
+	{
+		return;
+	}
+
+	my @action_array;
+
+	if (($parameter->{action_array})
+		and (scalar @{$parameter->{action_array}} == $ACTION_ARRAY_LENGTH))
+	{
+		@action_array = @{$parameter->{action_array}};
+	}
+	else
+	{
+		@action_array = (0) x $ACTION_ARRAY_LENGTH;
+	}
+
+	my $node_index = $parameter->{node} - 1;
+
+	my $index_to_set = ($node_index * $N_ACTIONS) + $parameter->{action} - 1;
+
+	$action_array[$index_to_set] = 1;
+
+	print_hash({
+		action_array	=>	join(",", @action_array),
+	});
+
+	return @action_array;
 }
 
-my $record_action_query = "
+sub record_action
+{
+	my $parameter = shift;
+
+	if ((not $parameter->{action_array})
+		or (scalar @{$parameter->{action_array}} != $ACTION_ARRAY_LENGTH))
+	{
+		print "CSV length does not match the expected length of ".$ACTION_ARRAY_LENGTH."."."\n";
+
+		return;
+	}
+
+	if (not $parameter->{n_hosts})
+	{
+		return;
+	}
+
+	if (not $parameter->{n_actions})
+	{
+		return;
+	}
+
+	my $record_action_query = "
 INSERT INTO
 	history.actions
 (
@@ -130,29 +164,73 @@ INSERT INTO
 	".join(",",
 		map {
 			my $node_prefix = "node_".$_."_";
-			map { $node_prefix."action_".$_ } 1..$N_ACTIONS
-		} 1..$N_HOSTS
+			map {
+				$node_prefix."action_".$_
+			} 1..$parameter->{n_actions}
+		} 1..$parameter->{n_hosts}
 	).",
 	modified_date
 ) VALUES (
 	".$an->data->{sys}{use_db_fh}->quote($an->Get->uuid()).",
 	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{host_uuid}).",
 	".join(",",
-		map { $an->data->{sys}{use_db_fh}->quote($_) } @action_array
+		map {
+			$an->data->{sys}{use_db_fh}->quote($_)
+		} @{$parameter->{action_array}}
 	).",
 	".$an->data->{sys}{use_db_fh}->quote($an->data->{sys}{db_timestamp})."
-);
-";
+);";
+
+	print_hash({
+		record_action_query	=>	$record_action_query,
+	});
+
+	$an->DB->do_db_write({
+		query	=>	$record_action_query,
+		source	=>	$THIS_FILE,
+		line	=>	__LINE__
+	});
+}
+
+# ----- End function section
 
 print_hash({
-	record_action_query	=>	$record_action_query,
+	action			=>	$an->data->{switches}{action},
+	node			=>	$an->data->{switches}{node},
+	csv 			=>	$an->data->{switches}{csv},
+	'record-only'	=>	$an->data->{switches}{'record-only'},
 });
 
-$an->DB->do_db_write({
-	query	=>	$record_action_query,
-	source	=>	$THIS_FILE,
-	line	=>	__LINE__
+my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
+
+my $node_uuid = get_node_uuid({
+	node	=>	$an->data->{switches}{node},
 });
+
+my @action_array;
+
+if ($an->data->{switches}{csv})
+{
+	@action_array = split(",", $an->data->{switches}{csv});
+}
+else
+{
+	@action_array = convert_to_action_array({
+		action	=>	$an->data->{switches}{action},
+		node	=>	$an->data->{switches}{node},
+	});
+}
+
+record_action({
+	action_array	=>	[ @action_array ],
+	n_hosts			=>	$N_HOSTS,
+	n_actions		=>	$N_ACTIONS,
+});
+
+if ($an->data->{switches}{'record-only'})
+{
+	$an->nice_exit({exit_code => 0});
+}
 
 # Only executed when host is a Node.
 #
