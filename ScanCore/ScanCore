@@ -1644,6 +1644,16 @@ ORDER BY
 				$an->Log->entry({log_level => 1, message_key => "scancore_log_0067", message_variables => {
 					node => $host_name, 
 				}, file => $THIS_FILE, line => __LINE__});
+
+				system(
+					$an->data->{path}{'execute-action'},
+					"--action",
+					4,
+					"--node-uuid",
+					$node_uuid,
+					"--record-only",
+				);
+
 				my $state = $an->ScanCore->target_power({
 						target => $node_uuid,
 						task   => "on",
@@ -1668,6 +1678,15 @@ ORDER BY
 		}
 		elsif (($power_is_safe) && ($temperature_is_safe) && ($my_temperature_is_ok))
 		{
+			system(
+				$an->data->{path}{'execute-action'},
+				"--action",
+				4,
+				"--node-uuid",
+				$node_uuid,
+				"--record-only",
+			);
+
 			# Okie!
 			my $state = $an->ScanCore->target_power({
 					target => $node_uuid, 
@@ -2605,7 +2624,7 @@ sub migrate_all_servers_to_here
 {
 	my ($an) = @_;
 	$an->Log->entry({log_level => 2, title_key => "tools_log_0001", title_variables => { function => "migrate_all_servers_to_here" }, message_key => "tools_log_0002", file => $THIS_FILE, line => __LINE__});
-	
+
 	# If the user has disabled auto-migration, exit now.
 	$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 		name1 => "scancore::disable::preventative_migration", value1 => $an->data->{scancore}{disable}{preventative_migration}, 

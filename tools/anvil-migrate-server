@@ -127,7 +127,18 @@ sub migrate_server
 	my $pre_migration_arguments  = $an->data->{server_data}{pre_migration_arguments};
 	my $post_migration_script    = $an->data->{server_data}{post_migration_script};
 	my $post_migration_arguments = $an->data->{server_data}{post_migration_arguments};
-	
+
+	system(
+		$an->data->{path}{'execute-action'},
+		"--action",
+		2,
+		"--node-uuid",
+		$an->Get->uuid({
+			get => $migration_target
+		}),
+		"--record-only",
+	);
+
 	# Set the migration type to the default if I didn't read it.
 	if (not $migration_type)
 	{

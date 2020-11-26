@@ -260,6 +260,8 @@ if ($an->data->{switches}{'node-uuid'})
 	$an->data->{switches}{node} = convert_node_uuid_to_node_number({
 		node_uuid	=>	$an->data->{switches}{'node-uuid'},
 	});
+
+	$node_uuid = $an->data->{switches}{'node-uuid'};
 }
 else
 {
@@ -268,28 +270,28 @@ else
 	});
 }
 
-my @action_array;
-
-if ($an->data->{switches}{csv})
-{
-	@action_array = split(",", $an->data->{switches}{csv});
-}
-else
-{
-	@action_array = convert_action_and_node_number_to_action_array({
-		action	=>	$an->data->{switches}{action},
-		node	=>	$an->data->{switches}{node},
-	});
-}
-
-record_action({
-	action_array	=>	[ @action_array ],
-	n_hosts			=>	$N_HOSTS,
-	n_actions		=>	$N_ACTIONS,
-});
-
 if ($an->data->{switches}{'record-only'})
 {
+	my @action_array;
+
+	if ($an->data->{switches}{csv})
+	{
+		@action_array = split(",", $an->data->{switches}{csv});
+	}
+	else
+	{
+		@action_array = convert_action_and_node_number_to_action_array({
+			action	=>	$an->data->{switches}{action},
+			node	=>	$an->data->{switches}{node},
+		});
+	}
+
+	record_action({
+		action_array	=>	[ @action_array ],
+		n_hosts			=>	$N_HOSTS,
+		n_actions		=>	$N_ACTIONS,
+	});
+
 	$an->nice_exit({exit_code => 0});
 }
 
