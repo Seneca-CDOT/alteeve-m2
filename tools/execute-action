@@ -33,9 +33,10 @@ if (not $an->data->{switches}{action})
 	$an->nice_exit({exit_code => 1});
 }
 
-if (not $an->data->{switches}{node})
+if ((not $an->data->{switches}{node})
+	and (not $an->data->{switches}{'node-uuid'}))
 {
-	print "Missing node number."."\n";
+	print "Missing node number or UUID."."\n";
 
 	$an->nice_exit({exit_code => 1});
 }
@@ -61,7 +62,7 @@ sub print_hash
 	}
 }
 
-sub get_node_uuid
+sub convert_node_number_to_node_uuid
 {
 	my $parameter = shift;
 
@@ -94,7 +95,52 @@ WHERE hosts.host_name LIKE 'an-a%n%".$parameter->{node}."%';";
 	return $node_uuid;
 }
 
-sub convert_to_action_array
+sub convert_node_uuid_to_node_number
+{
+	my $parameter = shift;
+
+	if (not $parameter->{node_uuid})
+	{
+		return;
+	}
+
+	if (not $parameter->{node_uuid} =~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+	{
+		print "Format of the provided Node UUID is invalid."."\n";
+
+		return;
+	}
+
+	my $get_node_number_query = "
+SELECT CAST(
+	SUBSTRING(
+		hosts.host_name,
+		'n([0-9]+)'
+	) AS int
+)
+FROM public.hosts hosts
+INNER JOIN public.nodes nodes
+	ON hosts.host_uuid = nodes.node_host_uuid
+WHERE nodes.node_uuid = '".$parameter->{node_uuid}."';";
+
+	print_hash({
+		get_node_number_query	=>	$get_node_number_query,
+	});
+
+	my $node_number = $an->DB->do_db_query({
+		query	=>	$get_node_number_query,
+		source	=>	$THIS_FILE,
+		line	=>	__LINE__
+	})->[0]->[0];
+
+	print_hash({
+		node_number	=>	$node_number,
+	});
+
+	return $node_number;
+}
+
+sub convert_action_and_node_number_to_action_array
 {
 	my $parameter = shift;
 
@@ -137,11 +183,8 @@ sub record_action
 {
 	my $parameter = shift;
 
-	if ((not $parameter->{action_array})
-		or (scalar @{$parameter->{action_array}} != $ACTION_ARRAY_LENGTH))
+	if (not $parameter->{action_array})
 	{
-		print "CSV length does not match the expected length of ".$ACTION_ARRAY_LENGTH."."."\n";
-
 		return;
 	}
 
@@ -152,6 +195,13 @@ sub record_action
 
 	if (not $parameter->{n_actions})
 	{
+		return;
+	}
+
+	if (scalar @{$parameter->{action_array}} != $ACTION_ARRAY_LENGTH)
+	{
+		print "Action array length does not match the expected length of ".$ACTION_ARRAY_LENGTH."."."\n";
+
 		return;
 	}
 
@@ -203,9 +253,20 @@ print_hash({
 
 my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
 
-my $node_uuid = get_node_uuid({
-	node	=>	$an->data->{switches}{node},
-});
+my $node_uuid;
+
+if ($an->data->{switches}{'node-uuid'})
+{
+	$an->data->{switches}{node} = convert_node_uuid_to_node_number({
+		node_uuid	=>	$an->data->{switches}{'node-uuid'},
+	});
+}
+else
+{
+	$node_uuid = convert_node_number_to_node_uuid({
+		node	=>	$an->data->{switches}{node},
+	});
+}
 
 my @action_array;
 
@@ -215,7 +276,7 @@ if ($an->data->{switches}{csv})
 }
 else
 {
-	@action_array = convert_to_action_array({
+	@action_array = convert_action_and_node_number_to_action_array({
 		action	=>	$an->data->{switches}{action},
 		node	=>	$an->data->{switches}{node},
 	});
