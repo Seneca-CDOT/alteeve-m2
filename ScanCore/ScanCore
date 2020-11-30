@@ -1644,6 +1644,16 @@ ORDER BY
 				$an->Log->entry({log_level => 1, message_key => "scancore_log_0067", message_variables => {
 					node => $host_name, 
 				}, file => $THIS_FILE, line => __LINE__});
+
+				system(
+					$an->data->{path}{'execute-action'},
+					"--action",
+					4,
+					"--node-uuid",
+					$node_uuid,
+					"--record-only",
+				);
+
 				my $state = $an->ScanCore->target_power({
 						target => $node_uuid,
 						task   => "on",
@@ -1668,6 +1678,15 @@ ORDER BY
 		}
 		elsif (($power_is_safe) && ($temperature_is_safe) && ($my_temperature_is_ok))
 		{
+			system(
+				$an->data->{path}{'execute-action'},
+				"--action",
+				4,
+				"--node-uuid",
+				$node_uuid,
+				"--record-only",
+			);
+
 			# Okie!
 			my $state = $an->ScanCore->target_power({
 					target => $node_uuid, 

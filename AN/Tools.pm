@@ -1349,6 +1349,7 @@ sub _set_paths
 	$an->data->{path}{control_libvirtd}                = "/sbin/striker/control_libvirtd";
 	$an->data->{path}{control_shorewall}               = "/sbin/striker/control_shorewall";
 	$an->data->{path}{do_dd}                           = "/sbin/striker/do_dd";
+	$an->data->{path}{'execute-action'}                = "/sbin/striker/execute-action";
 	$an->data->{path}{'striker-configure-vmm'}         = "/sbin/striker/striker-configure-vmm";
 	$an->data->{path}{'striker-delete-anvil'}          = "/sbin/striker/striker-delete-anvil";
 	$an->data->{path}{'striker-merge-dashboards'}      = "/sbin/striker/striker-merge-dashboards";
