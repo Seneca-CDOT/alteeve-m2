@@ -2624,7 +2624,7 @@ sub migrate_all_servers_to_here
 {
 	my ($an) = @_;
 	$an->Log->entry({log_level => 2, title_key => "tools_log_0001", title_variables => { function => "migrate_all_servers_to_here" }, message_key => "tools_log_0002", file => $THIS_FILE, line => __LINE__});
-
+	
 	# If the user has disabled auto-migration, exit now.
 	$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 		name1 => "scancore::disable::preventative_migration", value1 => $an->data->{scancore}{disable}{preventative_migration}, 
