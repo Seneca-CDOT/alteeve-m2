@@ -133,8 +133,8 @@ sub migrate_server
 		"--action",
 		2,
 		"--node-uuid",
-		$an->Get->uuid({
-			get => $migration_target
+		$an->ScanCore->get_node_uuid_from_node_name({
+			node_name => $migration_target
 		}),
 		"--record-only",
 	);
