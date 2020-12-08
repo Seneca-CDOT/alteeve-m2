@@ -74,8 +74,9 @@ if ((not $an->data->{switches}{node})
 	$an->nice_exit({exit_code => 1});
 }
 
-if ($an->data->{switches}{node} < 1
-	or $an->data->{switches}{node} > $N_HOSTS)
+if ($an->data->{switches}{node}
+	and ($an->data->{switches}{node} < 1
+		or $an->data->{switches}{node} > $N_HOSTS))
 {
 	print "Unrecognizable node; should be between 1 and ".$N_HOSTS."."."\n";
 
