@@ -156,10 +156,6 @@ WHERE hosts.host_name LIKE 'an-a%n%".$parameter->{node}."%';";
 		line	=>	__LINE__
 	})->[0]->[0];
 
-	print_hash({
-		node_uuid	=>	$node_uuid,
-	});
-
 	return $node_uuid;
 }
 
@@ -201,10 +197,6 @@ WHERE nodes.node_uuid = '".$parameter->{node_uuid}."';";
 		line	=>	__LINE__
 	})->[0]->[0];
 
-	print_hash({
-		node_number	=>	$node_number,
-	});
-
 	return $node_number;
 }
 
@@ -239,10 +231,6 @@ sub convert_action_and_node_number_to_action_array
 	my $index_to_set = ($node_index * $N_ACTIONS) + $parameter->{action} - 1;
 
 	$action_array[$index_to_set] = 1;
-
-	print_hash({
-		action_array	=>	join(",", @action_array),
-	});
 
 	return @action_array;
 }
@@ -315,19 +303,15 @@ INSERT INTO
 
 my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
 
-my $node_uuid;
-
 if ($an->data->{switches}{'node-uuid'})
 {
 	$an->data->{switches}{node} = convert_node_uuid_to_node_number({
 		node_uuid	=>	$an->data->{switches}{'node-uuid'},
 	});
-
-	$node_uuid = $an->data->{switches}{'node-uuid'};
 }
 else
 {
-	$node_uuid = convert_node_number_to_node_uuid({
+	$an->data->{switches}{'node-uuid'} = convert_node_number_to_node_uuid({
 		node	=>	$an->data->{switches}{node},
 	});
 }
@@ -355,6 +339,10 @@ if ($an->data->{switches}{'record-only'})
 			node	=>	$an->data->{switches}{node},
 		});
 	}
+
+	print_hash({
+		action_array	=>	join(",", @action_array),
+	});
 
 	record_action({
 		action_array		=>	[ @action_array ],
@@ -521,7 +509,7 @@ elsif ($an->data->{switches}{action} == 2)
 elsif ($an->data->{switches}{action} == 3)
 {
 	my $state = $an->ScanCore->target_power({
-		target	=> $node_uuid,
+		target	=> $an->data->{switches}{'node-uuid'},
 		task	=> "on",
 	});
 
