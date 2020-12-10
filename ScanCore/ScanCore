@@ -1648,7 +1648,7 @@ ORDER BY
 				system(
 					$an->data->{path}{'execute-action'},
 					"--action",
-					4,
+					"U",
 					"--node-uuid",
 					$node_uuid,
 					"--record-only",
@@ -1681,7 +1681,7 @@ ORDER BY
 			system(
 				$an->data->{path}{'execute-action'},
 				"--action",
-				4,
+				"U",
 				"--node-uuid",
 				$node_uuid,
 				"--record-only",
