@@ -83,6 +83,11 @@ if ($an->data->{switches}{node}
 	$an->nice_exit({exit_code => 1});
 }
 
+if ($an->data->{switches}{'record-only'})
+{
+	$an->data->{switches}{record} = $an->data->{switches}{'record-only'};
+}
+
 # ----- Begin function section
 
 sub print_hash
@@ -322,10 +327,11 @@ print_hash({
 	node			=>	$an->data->{switches}{node},
 	'node-uuid'		=>	$an->data->{switches}{'node-uuid'},
 	csv 			=>	$an->data->{switches}{csv},
+	record			=>	$an->data->{switches}{record},
 	'record-only'	=>	$an->data->{switches}{'record-only'},
 });
 
-if ($an->data->{switches}{'record-only'})
+if ($an->data->{switches}{record})
 {
 	my @action_array;
 
@@ -351,7 +357,10 @@ if ($an->data->{switches}{'record-only'})
 		action_name_list	=>	[ @ACTION_NAME_LIST ],
 	});
 
-	$an->nice_exit({exit_code => 0});
+	if ($an->data->{switches}{'record-only'})
+	{
+		$an->nice_exit({exit_code => 0});
+	}
 }
 
 # Only executed when host is a Node.
