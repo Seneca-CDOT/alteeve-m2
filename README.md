@@ -60,16 +60,15 @@ The `scancore::post_scan_checks::enabled` flag controls whether ScanCore should 
 
 These actions are only executed by **Nodes**.
 
-| Number | Definition                                                                             |
-| ------ | -------------------------------------------------------------------------------------- |
-| 1      | Do nothing.                                                                            |
-| 2      | Migrate Anvil servers to the Node on which the action was executed.                    |
-| 3      | Shutdown a Node; it will be auto-removed from the cluster during the shutdown process. |
+| Code | Name   | Definition                                                                             |
+| ---- | ------ | -------------------------------------------------------------------------------------- |
+| A    | Assume | Migrate Anvil servers to the Node on which the action was executed.                    |
+| D    | Down   | Shutdown a Node; it will be auto-removed from the cluster during the shutdown process. |
 
 ### Striker Actions
 
 These actions are only executed by **Strikers**.
 
-| Number | Definition                                                                        |
-| ------ | --------------------------------------------------------------------------------- |
-| 4      | Boot a Node; it will be auto-added to the cluster during the Node's boot process. |
+| Code | Name | Definition                                                                        |
+| ---- | ---- | --------------------------------------------------------------------------------- |
+| U    | Up   | Boot a Node; it will be auto-added to the cluster during the Node's boot process. |
