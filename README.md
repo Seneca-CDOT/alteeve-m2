@@ -34,17 +34,23 @@ Two pieces have been added in order for the AI to dispatch actions and prevent i
 
 ### 1. `execute-action` CLI tool
 
-`execute-action` accepts an action number and executes the corresponding action. It takes 2 arguments in the form of switches:
+`execute-action` accepts an action number and executes the corresponding action. It takes following arguments in the form of switches:
 
-1. (required) `--action`, and
-2. (optional) `--node-uuid`
+1. (required) `--action [action code]`
+2. (required) one of `--node [Node number]` or `--node-uuid [Node UUID]`, and
+3. (optional) `--csv [action CSV]`, and
+4. (optional) one of `--record` or `--record-only`
 
-Since this tool exists on all Nodes and Strikers, it is unnecessary to add additional arguments, i.e., host UUID, to determine the script's environment. Only decision 4 (refer to the [Striker decisions table](#striker-actions)) require `--node-uuid` because it specifies which node to boot.
+Note that:
+* Node number starts from 1 instead of 0 (which would be referred to as "Node index").
+* The length of the CSV matches `[number of actions] x [number of Nodes]`, where the first `[number of actions]` elements represents actions for the first Node, i.e., `1,0,0,0,0,0` is action assume on Node 1.
+* Action CSV is only used when either `--record` or  `--record-only` is set. This switch is only for skipping the need to recreate the action array when it can be provided; keep in mind that the script will not disassemble and check whether the CSV matches the provided action or Node.
+* `--record` will record the action and also execute the tasks defined for the action, but `--record-only` will record and exit without executing the defined tasks, i.e., server migration will be recorded but will not actually occur if this script was called with action assume and `--record-only`.
 
 Example usage:
 
 ```
-execute-action --action "4" --node-uuid "f5ac6b0b-9ef2-4b52-abcb-8fd46135a65c"
+execute-action --action "U" --node "1"
 ```
 
 ### 2. `scancore::post_scan_checks::enabled` flag in `/etc/striker/striker.conf`
