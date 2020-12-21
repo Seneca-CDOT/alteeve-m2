@@ -10,7 +10,12 @@ $| = 1;
 
 my $THIS_FILE = ($0 =~ /^.*\/(.*)$/)[0];
 my $N_HOSTS = 2;
-my $N_ACTIONS = 4;
+my $N_ACTIONS = 3;
+my @ACTION_NAME_LIST = (
+	"assume",
+	"down",
+	"up"
+);
 my $ACTION_ARRAY_LENGTH = $N_HOSTS * $N_ACTIONS;
 
 my $an = AN::Tools->new({
@@ -28,7 +33,35 @@ $an->Get->switches();
 
 if (not $an->data->{switches}{action})
 {
-	print "Missing action number."."\n";
+	print "Missing action code or number."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
+
+# Maybe the given action parameter is not a number; try converting it.
+if (not $an->data->{switches}{action} =~ /^[0-9]+$/)
+{
+	$an->data->{switches}{action} = convert_action_code_to_number({
+		action_code	=>	$an->data->{switches}{action}
+	});
+}
+
+if ($an->data->{switches}{action} < 1
+	or $an->data->{switches}{action} > $N_ACTIONS)
+{
+	print "Unrecognizable action; should be between 1 and "
+		.$N_ACTIONS
+		." or one of "
+		.join(
+			", ",
+			map {
+				uc(
+					substr($_, 0, 1)
+				);
+			} @ACTION_NAME_LIST
+		)
+		."."
+		."\n";
 
 	$an->nice_exit({exit_code => 1});
 }
@@ -39,6 +72,20 @@ if ((not $an->data->{switches}{node})
 	print "Missing node number or UUID."."\n";
 
 	$an->nice_exit({exit_code => 1});
+}
+
+if ($an->data->{switches}{node}
+	and ($an->data->{switches}{node} < 1
+		or $an->data->{switches}{node} > $N_HOSTS))
+{
+	print "Unrecognizable node; should be between 1 and ".$N_HOSTS."."."\n";
+
+	$an->nice_exit({exit_code => 1});
+}
+
+if ($an->data->{switches}{'record-only'})
+{
+	$an->data->{switches}{record} = $an->data->{switches}{'record-only'};
 }
 
 # ----- Begin function section
@@ -60,6 +107,33 @@ sub print_hash
 
 		print "$key: [$value]"."\n";
 	}
+}
+
+sub convert_action_code_to_number
+{
+	my $parameter = shift;
+
+	if (not $parameter->{action_code})
+	{
+		return;
+	}
+
+	my $action_number = 0;
+
+	if (uc($parameter->{action_code}) eq "A")
+	{
+		$action_number = 1;
+	}
+	elsif (uc($parameter->{action_code}) eq "D")
+	{
+		$action_number = 2;
+	}
+	elsif (uc($parameter->{action_code}) eq "U")
+	{
+		$action_number = 3;
+	}
+
+	return $action_number;
 }
 
 sub convert_node_number_to_node_uuid
@@ -87,10 +161,6 @@ WHERE hosts.host_name LIKE 'an-a%n%".$parameter->{node}."%';";
 		source	=>	$THIS_FILE,
 		line	=>	__LINE__
 	})->[0]->[0];
-
-	print_hash({
-		node_uuid	=>	$node_uuid,
-	});
 
 	return $node_uuid;
 }
@@ -133,10 +203,6 @@ WHERE nodes.node_uuid = '".$parameter->{node_uuid}."';";
 		line	=>	__LINE__
 	})->[0]->[0];
 
-	print_hash({
-		node_number	=>	$node_number,
-	});
-
 	return $node_number;
 }
 
@@ -172,10 +238,6 @@ sub convert_action_and_node_number_to_action_array
 
 	$action_array[$index_to_set] = 1;
 
-	print_hash({
-		action_array	=>	join(",", @action_array),
-	});
-
 	return @action_array;
 }
 
@@ -193,7 +255,7 @@ sub record_action
 		return;
 	}
 
-	if (not $parameter->{n_actions})
+	if (not $parameter->{action_name_list})
 	{
 		return;
 	}
@@ -214,9 +276,10 @@ INSERT INTO
 	".join(",",
 		map {
 			my $node_prefix = "node_".$_."_";
+
 			map {
-				$node_prefix."action_".$_
-			} 1..$parameter->{n_actions}
+				$node_prefix.$_
+			} @{$parameter->{action_name_list}}
 		} 1..$parameter->{n_hosts}
 	).",
 	modified_date
@@ -244,33 +307,31 @@ INSERT INTO
 
 # ----- End function section
 
-print_hash({
-	action			=>	$an->data->{switches}{action},
-	node			=>	$an->data->{switches}{node},
-	csv 			=>	$an->data->{switches}{csv},
-	'record-only'	=>	$an->data->{switches}{'record-only'},
-});
-
 my $connections = $an->DB->connect_to_databases({file => $THIS_FILE});
-
-my $node_uuid;
 
 if ($an->data->{switches}{'node-uuid'})
 {
 	$an->data->{switches}{node} = convert_node_uuid_to_node_number({
 		node_uuid	=>	$an->data->{switches}{'node-uuid'},
 	});
-
-	$node_uuid = $an->data->{switches}{'node-uuid'};
 }
 else
 {
-	$node_uuid = convert_node_number_to_node_uuid({
+	$an->data->{switches}{'node-uuid'} = convert_node_number_to_node_uuid({
 		node	=>	$an->data->{switches}{node},
 	});
 }
 
-if ($an->data->{switches}{'record-only'})
+print_hash({
+	action			=>	$an->data->{switches}{action},
+	node			=>	$an->data->{switches}{node},
+	'node-uuid'		=>	$an->data->{switches}{'node-uuid'},
+	csv 			=>	$an->data->{switches}{csv},
+	record			=>	$an->data->{switches}{record},
+	'record-only'	=>	$an->data->{switches}{'record-only'},
+});
+
+if ($an->data->{switches}{record})
 {
 	my @action_array;
 
@@ -286,19 +347,26 @@ if ($an->data->{switches}{'record-only'})
 		});
 	}
 
-	record_action({
-		action_array	=>	[ @action_array ],
-		n_hosts			=>	$N_HOSTS,
-		n_actions		=>	$N_ACTIONS,
+	print_hash({
+		action_array	=>	join(",", @action_array),
 	});
 
-	$an->nice_exit({exit_code => 0});
+	record_action({
+		action_array		=>	[ @action_array ],
+		n_hosts				=>	$N_HOSTS,
+		action_name_list	=>	[ @ACTION_NAME_LIST ],
+	});
+
+	if ($an->data->{switches}{'record-only'})
+	{
+		$an->nice_exit({exit_code => 0});
+	}
 }
 
 # Only executed when host is a Node.
 #
 # Migrate all servers to this Node.
-if ($an->data->{switches}{action} == 2)
+if ($an->data->{switches}{action} == 1)
 {
 	$an->Striker->load_anvil({anvil_uuid => $an->data->{sys}{anvil_uuid}});
 
@@ -408,7 +476,7 @@ if ($an->data->{switches}{action} == 2)
 # Only executed when host is a Node.
 #
 # Shut down this Node.
-elsif ($an->data->{switches}{action} == 3)
+elsif ($an->data->{switches}{action} == 2)
 {
 	my $shell_call = $an->data->{path}{'anvil-safe-stop'}." --local --suicide";
 
@@ -448,10 +516,10 @@ elsif ($an->data->{switches}{action} == 3)
 # Only executed when host is a Striker.
 #
 # Boot the Node specified by the node flag.
-elsif ($an->data->{switches}{action} == 4)
+elsif ($an->data->{switches}{action} == 3)
 {
 	my $state = $an->ScanCore->target_power({
-		target	=> $node_uuid,
+		target	=> $an->data->{switches}{'node-uuid'},
 		task	=> "on",
 	});
 
