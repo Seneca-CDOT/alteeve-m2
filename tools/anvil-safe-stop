@@ -555,7 +555,7 @@ sub shutdown_node
 	system(
 		$an->data->{path}{'execute-action'},
 		"--action",
-		3,
+		"D",
 		"--node-uuid",
 		$an->ScanCore->get_node_uuid_from_node_name({
 			node_name => $node
@@ -747,7 +747,7 @@ sub local_shut_down
 	system(
 		$an->data->{path}{'execute-action'},
 		"--action",
-		3,
+		"D",
 		"--node-uuid",
 		$an->ScanCore->get_node_uuid_from_node_name({
 			node_name => $an->hostname

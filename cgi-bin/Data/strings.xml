@@ -1053,7 +1053,7 @@
 		<key name="state_0077"><![CDATA[Can't ping peer on <a href="#!string!url_0005!#" target="_new">#!string!brand_0006!#</a>]]></key>
 		<key name="state_0078">Already running</key>
 		<key name="state_0079">Failed to read or generate RSA key</key>
-		<key name="state_0080"><![CDATA[Failed to populate: <span class="highlight_detail">known_hosts</span>]]></key>
+		<key name="state_0080"><![CDATA[Failed to populate: <span class="highlight_detail">known_hosts</span>.<br />Is there an IP conflict?]]></key>
 		<key name="state_0081"><![CDATA[Failed to populate: <span class="highlight_detail">authorized_keys</span>]]></key>
 		<key name="state_0082"><![CDATA[Testing <a href="https://alteeve.com/w/AN!Cluster_Tutorial_2#Concept.3B_Fencing" target="_new">fencing</span> failed! The error was:<br /><blockquote class="quoted_text">#!variable!message!#</blockquote><br />Please check your fence device(s) to ensure they've been configured properly.]]></key>
 		<key name="state_0083"><![CDATA[Failed to '<span class="highlight_detail">attach</span>' a resource. The error was:<br /><blockquote class="quoted_text">#!variable!message!#</blockquote>]]></key>
@@ -1083,9 +1083,9 @@
 		<key name="state_0107">#!free!#</key>
 		<key name="state_0108">#!free!#</key>
 		<key name="state_0109">#!free!#</key>
-		<key name="state_0110">Malformed MAC address found</key>
-		<key name="state_0111">Failed to download</key>
-		<key name="state_0112">Failed to extract files</key>
+		<key name="state_0110"><![CDATA[Malformed MAC address found.<br />Does the install manifest have <br />the correct Striker IPs?]]></key>
+		<key name="state_0111"><![CDATA[Failed to download<br />Does the install manifest have <br />the correct Striker IPs?]]></key>
+		<key name="state_0112"><![CDATA[Failed to extract files<br />Does the install manifest have <br />the correct Striker IPs?]]></key>
 		<key name="state_0113">Template #!string!brand_0002!# configuration not found.</key>
 		<key name="state_0114">Failed to create #!string!brand_0002!# configuration file.</key>
 		<key name="state_0115">#!free!#</key>
@@ -1335,7 +1335,7 @@
 		<key name="message_0008">
 -=] Host: 
 
-CPU: ... #!variable!model!# (#!variable!cores!#c/#!variable!cores!#t)
+CPU: ... #!variable!model!# (#!variable!cores!#c/#!variable!threads!#t)
 RAM: ... #!variable!ram_size!# total, #!variable!ram_allocated!# allocated, #!variable!ram_available!# available for servers
 Swap: .. #!variable!swap_size!# total, #!variable!swap_used!# used, #!variable!swap_free!# free
 Bridges: #!variable!bridges!#
@@ -2582,7 +2582,7 @@ Deadline Scheduler Configuration (sda):
 		<key name="asst_log_0011">There was a problem connecting to my peer: [#!variable!peer!#]. I will pause for a bit and then try again.</key>
 		<key name="asst_log_0012">#!free!#</key>
 		<key name="asst_log_0013">#!free!#</key>
-		<key name="asst_log_0014">The estimated resync time for the DRBD resource: [#!variable!resource!#] is: [#!variable!sync_eta!#] seconds, which is over the maximum wait time of: [#!data!sys::resync_max_wait_time!#] second. Boosting the sync speed and will recheck the ETA in a few moments. Note that this maximum wait time can be configured via 'sys::resync_max_wait_time = X'.</key>
+		<key name="asst_log_0014">The estimated resync time for the DRBD resource: [#!variable!resource!#] is: [#!variable!sync_eta!#] seconds, which is over the maximum wait time of: [#!data!anvil-safe-start::drbd::max_wait_time!#] second. Boosting the sync speed and will recheck the ETA in a few moments. Note that this maximum wait time can be configured via 'anvil-safe-start::drbd::max_wait_time = X'.</key>
 		<key name="asst_log_0015">After boosting resync speed for the DRBD resource: [#!variable!resource!#], the estimated resync time is: [#!variable!sync_eta!#] seconds. This is too long, so the resource will be reset to config values and it will be left to resync after the servers have booted.</key>
 		<key name="asst_log_0016">After boosting resync speed for the DRBD resource: [#!variable!resource!#], the estimated resync time is: [#!variable!sync_eta!#] seconds. This is short enough that we will wait for it to finish sync'ing before proceeding.</key>
 		<key name="asst_log_0017">The DRBD resource: [#!variable!resource!#] is now synchronized, proceeding.</key>

@@ -131,7 +131,7 @@ sub migrate_server
 	system(
 		$an->data->{path}{'execute-action'},
 		"--action",
-		2,
+		"A",
 		"--node-uuid",
 		$an->ScanCore->get_node_uuid_from_node_name({
 			node_name => $migration_target

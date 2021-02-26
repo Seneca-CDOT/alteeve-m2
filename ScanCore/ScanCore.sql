@@ -1397,14 +1397,12 @@ CREATE TABLE history.actions (
 	history_id							bigserial,
 	uuid								uuid,
 	host_uuid							uuid,						-- UUID of the machine that executed the action
-	node_1_action_1						numeric,					-- 0 or 1 specifying whether this action was executed
-	node_1_action_2						numeric,
-	node_1_action_3						numeric,
-	node_1_action_4						numeric,
-	node_2_action_1						numeric,
-	node_2_action_2						numeric,
-	node_2_action_3						numeric,
-	node_2_action_4						numeric,
+	node_1_assume						numeric,					-- 0 or 1 specifying whether the action was executed
+	node_1_down							numeric,
+	node_1_up							numeric,
+	node_2_assume						numeric,
+	node_2_down							numeric,
+	node_2_up							numeric,
 	modified_date						timestamp with time zone
 );
 ALTER TABLE history.actions OWNER TO #!variable!user!#;

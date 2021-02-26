@@ -115,6 +115,7 @@ my $an = AN::Tools->new({
 			striker			=>	"/var/www/cgi-bin/striker",
 			striker_config		=>	"/etc/striker/striker.conf",
 			striker_dir		=>	"/sbin/striker/",
+			'striker-enable-vault'	=>	"/sbin/striker/striker-enable-vault",
 			su			=>	"/bin/su",
 			tar			=>	"/bin/tar",
 			tarball_dir		=>	"",
@@ -140,7 +141,7 @@ my $an = AN::Tools->new({
 			# access that file, we'll use 'striker_default'. Optionally, the user can request a branch
 			# with '--branch [branch_name]', in which case we will download the 'striker_source_prefix'.'branch_name' URL. In all
 			# cases, the downloaded file will be saved as 'striker_zip_file'.
-			striker_default			=>	"https://github.com/ClusterLabs/striker/archive/v2.0.8.zip",
+			striker_default			=>	"https://github.com/ClusterLabs/striker/archive/v2.0.9.zip",
 			striker_latest			=>	"https://www.alteeve.com/an-repo/striker_latest.txt",
 			striker_source_prefix	=>	"https://codeload.github.com/Seneca-CDOT/alteeve-m2/zip/",
 			support					=>	"https://alteeve.com/w/Support",
@@ -2482,6 +2483,7 @@ done
 			# Local call. If an update is needed, we'll set 'sys::reboot_needed' and tell the user to 
 			# reboot when we exit.
 			print "Updating the operating system on the local machine now. Please be patient.\n";
+			
 			print "- If any dashboard repositories are still set to 'priority=1', they will be\n";
 			print "  updated to remove this constraint.\n";
 			$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
@@ -2570,6 +2572,57 @@ done
 			$an->Log->entry({log_level => 4, message_key => "an_variables_0001", message_variables => {
 				name1 => "password", value1 => $password,
 			}, file => $THIS_FILE, line => __LINE__});
+			
+			$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+				name1 => "path::striker-enable-vault", value1 => $an->data->{path}{'striker-enable-vault'},
+			}, file => $THIS_FILE, line => __LINE__});
+			if (-f $an->data->{path}{'striker-enable-vault'})
+			{
+				print "- Enabling CentOS Vault on: [".$target."]\n";
+				print "- Copying over: [".$an->data->{path}{'striker-enable-vault'}."].\n";
+				$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
+					name1 => "target",                     value1 => $target,
+					name2 => "path::striker-enable-vault", value2 => $an->data->{path}{'striker-enable-vault'},
+				}, file => $THIS_FILE, line => __LINE__});
+				my $return_code = $an->Storage->rsync({
+					target      => $target,
+					port        => $port, 
+					password    => $password,
+					source      => $an->data->{path}{'striker-enable-vault'},
+					destination => "root\@".$target.":/sbin/striker/",
+					switches    => "-avAX",
+				});
+				$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+					name1 => "return_code", value1 => $return_code, 
+				}, file => $THIS_FILE, line => __LINE__});
+				
+				# Now run it
+				my $shell_call = $an->data->{path}{'striker-enable-vault'};
+				$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
+					name1 => "target",     value1 => $target,
+					name2 => "shell_call", value2 => $shell_call,
+				}, file => $THIS_FILE, line => __LINE__});
+				$an->Log->entry({log_level => 4, message_key => "an_variables_0001", message_variables => {
+					name1 => "password", value1 => $password,
+				}, file => $THIS_FILE, line => __LINE__});
+				print "/-----[ Command output ]------------------------------------------------------\n";
+				my ($error, $ssh_fh, $return) = $an->Remote->remote_call({
+					target     => $target,
+					port       => 22, 
+					password   => $password,
+					shell_call => $shell_call,
+				});
+				foreach my $line (@{$return})
+				{
+					$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+						name1 => "line", value1 => $line,
+					}, file => $THIS_FILE, line => __LINE__});
+					print "| $line\n";
+				}
+				print "- CentOS Vault should now be enabled.\n";
+				print "\\-----------------------------------------------------------------------------\n";
+			}
+			
 			print "/-----[ Command output ]------------------------------------------------------\n";
 			my ($error, $ssh_fh, $return) = $an->Remote->remote_call({
 				target     => $target,
@@ -2648,6 +2701,30 @@ done
 					name1 => "return_code", value1 => $return_code, 
 				}, file => $THIS_FILE, line => __LINE__});
 			}
+		}
+	}
+	
+	# If we're updating local, we're a dashboard and we need to update anvil-map-network under apache as
+	# it is downloaded by nodes during the install.
+	if ($target eq "local")
+	{
+		# We need to make sure that 'anvil-map-network' is updated where it will be
+		# downloaded from by nodes during kickstart installs.
+		my $source      = $an->data->{path}{updates}{striker}."/*";
+		my $target_path = "/var/www/html/".get_os_type($an)."6/x86_64";
+		$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
+			name1 => "source",      value1 => $source, 
+			name2 => "target_path", value2 => $target_path, 
+		}, file => $THIS_FILE, line => __LINE__});
+		
+		foreach my $directory ("files", "img")
+		{
+			my $destination = $target_path."/".$directory."/Tools/striker/";
+			$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+				name1 => "destination", value1 => $destination, 
+			}, file => $THIS_FILE, line => __LINE__});
+			
+			rsync_data($an, $source, $destination);
 		}
 	}
 	print "- Done.\n\n";
@@ -4076,6 +4153,36 @@ sub download_os_updates
 	if ($an->data->{switches}{offline})
 	{
 		$shell_call = $an->data->{path}{yum}." -y update --downloadonly --disablerepo=* --enablerepo=*striker*";
+	}
+	else
+	{
+		# This will copy the local 'striker-enable-vault' script to the target and run it.
+		$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+			name1 => "path::striker-enable-vault", value1 => $an->data->{path}{'striker-enable-vault'},
+		}, file => $THIS_FILE, line => __LINE__});
+		if (-f $an->data->{path}{'striker-enable-vault'})
+		{
+			print "- Enabling CentOS Vault\n";
+			
+			# Run it
+			my $shell_call = $an->data->{path}{'striker-enable-vault'};
+			$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+				name1 => "shell_call", value1 => $shell_call, 
+			}, file => $THIS_FILE, line => __LINE__});
+			print "/-----[ Command output ]------------------------------------------------------\n";
+			open (my $file_handle, "$shell_call 2>&1 |") or die __LINE__."; [ Error ] - Failed to call: [$shell_call]. Received error: $!\n\n";
+			while(<$file_handle>)
+			{
+				chomp;
+				my $line = $_;
+				$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+					name1 => "line", value1 => $line, 
+				}, file => $THIS_FILE, line => __LINE__});
+				print "| $line\n"; 
+			}
+			print "- CentOS Vault should now be enabled.\n";
+			print "\\-----------------------------------------------------------------------------\n";
+		}
 	}
 	$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 		name1 => "shell_call", value1 => $shell_call,

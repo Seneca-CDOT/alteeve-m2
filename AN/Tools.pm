@@ -960,6 +960,8 @@ sub _set_defaults
 		"opensuse12#!#openSuse 12",
 		"opensuse11#!#openSuse 11",
 		"fedora18#!#Fedora Rawhide",
+		"fedora18#!#Fedora 32",
+		"fedora18#!#Fedora 31",
 		"fedora18#!#Fedora 30",
 		"fedora18#!#Fedora 29",
 		"fedora18#!#Fedora 28",
@@ -986,6 +988,7 @@ sub _set_defaults
 		"fedora7#!#Fedora 7",
 		"fedora6#!#Fedora Core 6",
 		"fedora5#!#Fedora Core 5",
+		"rhel7#!#Ubuntu 19.10 (Eoan Ermine)",
 		"rhel7#!#Ubuntu 19.04 (Disco Dingo)",
 		"rhel7#!#Ubuntu 18.10 (Cosmic Cuttlefish)",
 		"rhel7#!#Ubuntu 18.04 (Bionic Beaver)",
@@ -1079,7 +1082,7 @@ sub _set_defaults
 	$an->data->{sys}{username}                             = getpwuid( $< );
 	# If a user wants to use spice + qxl for video in VMs, set this to '1'. NOTE: This disables web-based VNC!
 	$an->data->{sys}{use_spice_graphics}                   = 1;
-	$an->data->{sys}{version}                              = "2.0.7";
+	$an->data->{sys}{version}                              = "2.0.10";
 	# Adds: [--disablerepo='*' --enablerepo='striker*'] if
 	# no internet connection found.
 	$an->data->{sys}{yum_switches}                         = "-y";
@@ -1153,7 +1156,6 @@ sub _set_paths
 	$an->data->{path}{df}                     = "/bin/df";
 	$an->data->{path}{dmesg}                  = "/bin/dmesage";
 	$an->data->{path}{dmidecode}              = "/usr/sbin/dmidecode";
-	$an->data->{path}{'drbd-overview'}        = "/usr/sbin/drbd-overview";
 	$an->data->{path}{drbdadm}                = "/sbin/drbdadm";
 	$an->data->{path}{drbdmeta}               = "/sbin/drbdmeta";
 	$an->data->{path}{echo}                   = "/bin/echo";
@@ -1352,6 +1354,7 @@ sub _set_paths
 	$an->data->{path}{'execute-action'}                = "/sbin/striker/execute-action";
 	$an->data->{path}{'striker-configure-vmm'}         = "/sbin/striker/striker-configure-vmm";
 	$an->data->{path}{'striker-delete-anvil'}          = "/sbin/striker/striker-delete-anvil";
+	$an->data->{path}{'striker-enable-vault'}          = "/sbin/striker/striker-enable-vault";
 	$an->data->{path}{'striker-merge-dashboards'}      = "/sbin/striker/striker-merge-dashboards";
 	$an->data->{path}{'striker-change-password'}       = "/sbin/striker/striker-change-password";
 	$an->data->{path}{'striker-push-ssh'}              = "/sbin/striker/striker-push-ssh";
