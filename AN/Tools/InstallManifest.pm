@@ -4784,7 +4784,7 @@ sub configure_scancore
 			password  => $an->data->{sys}{anvil}{node2}{password},
 			node_name => $an->data->{sys}{anvil}{node2}{name},
 		}) if not $an->data->{node}{node2}{has_servers};
-	$an->Log->entry({log_level => 3, message_key => "an_variables_0004", message_variables => {
+	$an->Log->entry({log_level => 2, message_key => "an_variables_0004", message_variables => {
 		name1 => "node1_return_code",         value1 => $node1_return_code,
 		name2 => "node2_return_code",         value2 => $node2_return_code,
 		name3 => "node1_return_code_message", value3 => $node1_return_code_message,
@@ -5062,7 +5062,7 @@ fi;
 	});
 	foreach my $line (@{$return})
 	{
-		$an->Log->entry({log_level => 3, message_key => "an_variables_0001", message_variables => {
+		$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 			name1 => "line", value1 => $line, 
 		}, file => $THIS_FILE, line => __LINE__});
 		
@@ -11606,7 +11606,7 @@ sub install_programs_on_node
 	if ($to_install)
 	{
 		# Clear the old cache and install missing packages.
-		my $shell_call = $an->data->{path}{yum}." clean expire-cache && ".$an->data->{path}{yum}." ".$an->data->{sys}{yum_switches}." install $to_install";
+		my $shell_call = $an->data->{path}{yum}." clean expire-cache && ".$an->data->{path}{yum}." ".$an->data->{sys}{yum_switches}." --disablerepo=* --enablerepo=*striker* install $to_install";
 		$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
 			name1 => "target",     value1 => $target,
 			name2 => "shell_call", value2 => $shell_call,
@@ -12244,19 +12244,21 @@ sub map_network_on_node
 	$an->Log->entry({log_level => 2, title_key => "tools_log_0001", title_variables => { function => "map_network_on_node" }, message_key => "tools_log_0002", file => $THIS_FILE, line => __LINE__});
 	
 	### TODO: Why are we not using $an->Remote->remote_call() ?
-	my $remap      = $parameter->{remap}    ? $parameter->{remap}    : "";
-	my $say_node   = $parameter->{say_node} ? $parameter->{say_node} : "";
-	my $node       = $parameter->{node}     ? $parameter->{node}     : "";
-	my $target     = $parameter->{target}   ? $parameter->{target}   : "";
-	my $port       = $parameter->{port}     ? $parameter->{port}     : 22;
+	my $remap      = $parameter->{remap}      ? $parameter->{remap}      : "";
+	my $say_node   = $parameter->{say_node}   ? $parameter->{say_node}   : "";
+	my $node       = $parameter->{node}       ? $parameter->{node}       : "";
+	my $target     = $parameter->{target}     ? $parameter->{target}     : "";
+	my $port       = $parameter->{port}       ? $parameter->{port}       : 22;
 	my $ssh_fh_key = $target.":".$port;
-	my $password   = $parameter->{password} ? $parameter->{password} : "";
-	$an->Log->entry({log_level => 2, message_key => "an_variables_0005", message_variables => {
-		name1 => "remap",    value1 => $remap, 
-		name2 => "say_node", value2 => $say_node, 
-		name3 => "node",     value3 => $node, 
-		name4 => "target",   value4 => $target, 
-		name5 => "port",     value5 => $port, 
+	my $password   = $parameter->{password}   ? $parameter->{password}   : "";
+	my $start_only = $parameter->{start_only} ? $parameter->{start_only} : "";
+	$an->Log->entry({log_level => 2, message_key => "an_variables_0006", message_variables => {
+		name1 => "remap",      value1 => $remap, 
+		name2 => "say_node",   value2 => $say_node, 
+		name3 => "node",       value3 => $node, 
+		name4 => "target",     value4 => $target, 
+		name5 => "port",       value5 => $port, 
+		name6 => "start_only", value6 => $start_only, 
 	}, file => $THIS_FILE, line => __LINE__});
 	$an->Log->entry({log_level => 4, message_key => "an_variables_0001", message_variables => {
 		name1 => "password", value1 => $password, 
@@ -12308,7 +12310,7 @@ fi";
 		if ($line =~ "ready")
 		{
 			# Downloaded (or already existed), ready to go.
-			$an->Log->entry({log_level => 3, message_key => "an_variables_0001", message_variables => {
+			$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 				name1 => "proceed", value1 => $proceed,
 			}, file => $THIS_FILE, line => __LINE__});
 			$proceed = 1;
@@ -12386,16 +12388,20 @@ fi";
 			return("");
 		}
 		
-		my $shell_call = $an->data->{path}{'anvil-map-network'}." --script --summary";
-		$an->Log->entry({log_level => 3, message_key => "an_variables_0001", message_variables => {
+		$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
 			name1 => "remap", value1 => $remap,
 		}, file => $THIS_FILE, line => __LINE__});
-		if ($remap)
+		my $shell_call = $an->data->{path}{'anvil-map-network'}." --script --summary";
+		if ($start_only)
+		{
+			$shell_call = $an->data->{path}{'anvil-map-network'}." --script --start-only";
+		}
+		elsif ($remap)
 		{
 			$an->data->{cgi}{update_manifest} = 1;
 			$shell_call = $an->data->{path}{'anvil-map-network'}." --script";
 		}
-		$an->Log->entry({log_level => 3, message_key => "an_variables_0002", message_variables => {
+		$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
 			name1 => "shell_call",           value1 => $shell_call,
 			name2 => "cgi::update_manifest", value2 => $an->data->{cgi}{update_manifest},
 		}, file => $THIS_FILE, line => __LINE__});
@@ -12920,6 +12926,9 @@ fi;";
 					
 					# OK, now we give up
 					$ok = 0;
+					$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+						name1 => "ok", value1 => $ok,
+					}, file => $THIS_FILE, line => __LINE__});
 				}
 			}
 		}
@@ -14163,11 +14172,27 @@ sub run_new_install_manifest
 		name2 => "node2_remap_required", value2 => $node2_remap_required,
 	}, file => $THIS_FILE, line => __LINE__});
 	
-	# If either/both nodes need a remap done, do it now.
+	# Before we remap, if we're mapping both, call 'anvil-map-network' on node 2 with '--start-only' to 
+	# ensure its SN links are up before we start mapping node 1. This is needed for back-to-back 
+	# connected SNs so that node 1 will see a link.
 	my $node1             = $an->data->{sys}{anvil}{node1}{name};
 	my $node2             = $an->data->{sys}{anvil}{node2}{name};
 	my $node1_return_code = 0;
 	my $node2_return_code = 0;
+	if (($node1_remap_required) && ($node2_remap_required))
+	{
+		($node2_return_code) = $an->InstallManifest->map_network_on_node({
+				node       => $node2, 
+				target     => $an->data->{sys}{anvil}{node2}{use_ip}, 
+				port       => $an->data->{sys}{anvil}{node2}{use_port}, 
+				password   => $an->data->{sys}{anvil}{node2}{password},
+				remap      => 0, 
+				say_node   => "#!string!device_0006!#",
+				start_only => 1,
+			});
+	}
+	
+	# If either/both nodes need a remap done, do it now.
 	if (($node1_remap_required) && (not $an->data->{node}{node1}{has_servers}))
 	{
 		($node1_return_code) = $an->InstallManifest->map_network_on_node({
@@ -19865,7 +19890,24 @@ sub _do_os_update
 		name1 => "password", value1 => $password, 
 	}, file => $THIS_FILE, line => __LINE__});
 	
-	my $shell_call = $an->data->{path}{yum}." ".$an->data->{sys}{yum_switches}." update";
+	my $return_code = $an->Storage->rsync({
+		target      => $target,
+		port        => $port, 
+		password    => $password,
+		source      => $an->data->{path}{'striker-enable-vault'},
+		destination => "root\@".$target.":/sbin/striker/",
+		switches    => $an->data->{args}{rsync},
+	});
+	$an->Log->entry({log_level => 2, message_key => "an_variables_0001", message_variables => {
+		name1 => "return_code", value1 => $return_code, 
+	}, file => $THIS_FILE, line => __LINE__});
+	
+	# This checks and enables the Vault repo.
+	my $shell_call = "if [ -e '/sbin/striker/striker-enable-vault' ];
+then 
+    /sbin/striker/striker-enable-vault; 
+fi;
+".$an->data->{path}{yum}." ".$an->data->{sys}{yum_switches}." update";
 	$an->Log->entry({log_level => 2, message_key => "an_variables_0002", message_variables => {
 		name1 => "target",     value1 => $target,
 		name2 => "shell_call", value2 => $shell_call,
